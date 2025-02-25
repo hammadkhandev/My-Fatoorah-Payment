@@ -14,18 +14,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout the repository
-      - name: Checkout repository
+      # Checkout repository
+      - name: Checkout Repository
         uses: actions/checkout@v3
 
-      # Setup Flutter using a GitHub Action
+      # Setup Flutter 3.29.0 using subosito/flutter-action
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.29.0'  # Update this version as needed
+          flutter-version: '3.29.0'
 
-      # Cache Flutter and Pub packages to speed up builds
-      - name: Cache Flutter packages
+      # Cache Pub packages to speed up builds
+      - name: Cache Flutter Packages
         uses: actions/cache@v3
         with:
           path: |
@@ -47,6 +47,6 @@ jobs:
       - name: Run Tests
         run: flutter test
 
-      # Build a release APK (adjust to your needs)
-      - name: Build APK (Release)
+      # Build a release APK (you can adjust this command as needed)
+      - name: Build Release APK
         run: flutter build apk --release
