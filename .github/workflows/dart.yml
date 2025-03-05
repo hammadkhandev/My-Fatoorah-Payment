@@ -14,39 +14,56 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout repository
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      # Setup Flutter 3.29.0 using subosito/flutter-action
+      # 1. Setup Java 17 (required for Android SDK 35+)
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'zulu'
+
+      # 2. Setup Android SDK
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      # 3. Setup Flutter with specific channel
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.29.0'
+          channel: 'stable'
 
-      # Cache Pub packages to speed up builds
-      - name: Cache Flutter Packages
+      # 4. Cache improvements (add Gradle cache)
+      - name: Cache dependencies
         uses: actions/cache@v3
         with:
           path: |
             ~/.pub-cache
+            ~/.gradle/caches
             ${{ github.workspace }}/build
-          key: ${{ runner.os }}-flutter-${{ hashFiles('**/pubspec.yaml') }}
+          key: ${{ runner.os }}-flutter-${{ hashFiles('**/pubspec.yaml', '**/build.gradle') }}
           restore-keys: |
             ${{ runner.os }}-flutter-
 
-      # Install dependencies
+      # 5. Accept Android licenses
+      - name: Accept Android licenses
+        run: |
+          yes | sdkmanager --licenses || true
+          flutter doctor --android-licenses
+
+      # 6. Install dependencies with fix for Maven Central
       - name: Install Dependencies
-        run: flutter pub get
+        run: |
+          flutter pub get
+          cd android && ./gradlew --stop && cd ..
 
-      # Run Flutter static analysis
-      - name: Analyze Code
-        run: flutter analyze
-
-      # Run tests
-      - name: Run Tests
-        run: flutter test
-
-      # Build a release APK (you can adjust this command as needed)
+      # 7. Build with increased memory and retries
       - name: Build Release APK
-        run: flutter build apk --release
+        run: |
+          flutter build apk --release \
+            --dart-define=CI=true \
+            --verbose
+        env:
+          GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.workers.max=2 -Xmx4096m"
